@@ -14,11 +14,13 @@ lightSleepTime=1
 resolution="1920x1080"
 
 # If camera has auto-brigthness, this parametr needed to be at least 20
-frameToSkip=20
+framesToSkip=20
 
 # Needed to be 1 if script will be run at the first time
 isSettingUpNeeded=0
 
+# Name of directory to save photos
+dirToSave=project_photos
 # Common path for all GPIO access. DO NOT CHANGE IF YOU HAVE STOCK RASPBERRY PI OS!
 BASE_GPIO_PATH=/sys/class/gpio
 
@@ -55,15 +57,6 @@ allLightsOff()
   setLightState $PIN_1 $OFF
 }
 
-# Ctrl-C handler for clean shutdown
-shutdown()
-{
-  allLightsOff
-  exit 0
-}
-
-#trap shutdown SIGINT
-
 # Export pins so that we can use them
 exportPin $PIN_1
 
@@ -76,16 +69,18 @@ allLightsOff
 # Function to prepare for run main part of script
 # This function include installations, creating folders, tests & etc
 settingUp(){
-	sudo apt update
-	sudo apt install fswebcam
-	cd ~
-	mkdir project_photos
-	cd project_photos
-}
+  sudo apt update
+  sudo apt install fswebcam
+  isDirExist='find ~ -type d -name "$dirToSave"'
+  if [ -z isDirExist  && $? -eq 0 ]
+  then
+       mkdir ~/$dirToSave
+  fi
+} 
 
 # Function to take one formatted picture
 takePhoto() {
-	fswebcam --line-colour \#FFFFFFFF --banner-colour \#FFFFFFFF --timestamp "$i photo %Y-%m-%d %H:%M:%S" $i
+	fswebcam --line-colour \#FFFFFFFF --banner-colour \#FFFFFFFF --timestamp "$i photo %Y-%m-%d %H:%M:%S" -r $resolution -S $framesToSkip --font sans:20 $i
 	sleep $cameraSleepTime
 }
 
@@ -95,7 +90,9 @@ then
 	settingUp
 fi
 
-# Main loop
+# Main part of script
+
+cd ~/$dirToSave
 for i in ${countOfPhotos[*]}
 do
   setLightState $PIN_1 $ON
