@@ -39,9 +39,7 @@ setLightState()
 # Utility function to turn all lights off
 allLightsOff()
 {
-  setLightState $RED $OFF
-  setLightState $YELLOW $OFF
-  setLightState $GREEN $OFF
+  setLightState $PIN_1 $OFF
 }
 
 # Ctrl-C handler for clean shutdown
@@ -54,14 +52,10 @@ shutdown()
 trap shutdown SIGINT
 
 # Export pins so that we can use them
-exportPin $RED
-exportPin $YELLOW
-exportPin $GREEN
+exportPin $PIN_1
 
 # Set pins as outputs
-setOutput $RED
-setOutput $YELLOW
-setOutput $GREEN
+setOutput $PIN_1
 
 # Turn lights off to begin
 allLightsOff
