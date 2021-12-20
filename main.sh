@@ -11,13 +11,13 @@ cameraSleepTime=0
 # Time to wait before/after lights are on
 lightSleepTime=1
 # Camera resolution
-resolution="1920x1080"
+resolution="1600x1200"
 
 # If camera has auto-brigthness, this parametr needed to be at least 20
 framesToSkip=20
 
 # Needed to be 1 if script will be run at the first time
-isSettingUpNeeded=0
+isSettingUpNeeded=1
 
 # Name of directory to save photos
 dirToSave=project_photos
@@ -25,21 +25,22 @@ dirToSave=project_photos
 BASE_GPIO_PATH=/sys/class/gpio
 
 # Assign names to GPIO pin numbers for each light.
-PIN_1=5
-PIN_2=11
-PIN_3=9
-PIN_4=10
-PIN_5=22
-PIN_6=27
-PIN_7=17
-PIN_8=4
-PIN_9=3
-PIN_10=2
+PIN_1=10
+PIN_2=14
+PIN_3=16
+PIN_4=15
+PIN_5=3
+PIN_6=0
+PIN_7=1
+PIN_8=6
+PIN_9=11
+PIN_10=12
+CONFIG_PIN=6
 
 listOfPins=($PIN_1 $PIN_2 $PIN_3 $PIN_4 $PIN_5 $PIN_6 $PIN_7 $PIN_8 $PIN_9 $PIN_10) 
 
 # Assign name to input GPIO pin for button
-BUTTON=18
+BUTTON=13
 # Assign names to states
 ON="1"
 OFF="0"
@@ -109,19 +110,37 @@ allLightsOff
 
 # Function to prepare for run main part of script
 # This function include installations, creating folders, tests & etc
+
+# Variables to indicate setting up errors
+
+isUpdateOk=1
+isFswebcamOk=1
+isSambaOk=1
+isDirOk=1
+
 settingUp(){
-  	sudo apt update
-  	sudo apt install fswebcam
-  	isDirExist='find ~ -type d -name "$dirToSave"'
-  	if [ -z isDirExist  && $? -eq 0 ]
+  	
+	sudo apt update
+  	sudo apt install -y fswebcam
+	sudo apt install -y samba samba-common-bin smbclient cifs-utils
+  	isDirExist=`find ~ -type d -name "$dirToSave"`
+  	if [ -z $isDirExist && $? -eq 0 ]
 	then
        	mkdir ~/$dirToSave
-  	fi
+	fi
+	sudo chmod 0777 ~/$dirToSave
+	sudo smbpasswd -n pi
+	sudo chmod 0777 /etc/samba/smb.conf
+	sudo printf "[share]\npath = /home/pi/$dirToSave\nread only = no\npublic = yes\nwritable = yes\nguest ok = yes\nguest only = yes\nguest account = nobody\nbrowsable = yes" > /etc/samba/smb.conf
+	sudo /etc/init.d/smbd restart
+
 } 
+
+
 
 # Function to take one formatted picture
 takePhoto() {
-	fswebcam --line-colour \#FFFFFFFF --banner-colour \#FFFFFFFF --timestamp "$(( $i + 1 )) photo %Y-%m-%d %H:%M:%S" -r $resolution -S $framesToSkip --font sans:20 $(( $i + 1 ))
+	fswebcam --line-colour \#FFFFFFFF --banner-colour \#FFFFFFFF --no-timestamp -r $resolution -S $framesToSkip --font sans:20 --png $(( $i + 1 ))
 	sleep $cameraSleepTime
 }
 
